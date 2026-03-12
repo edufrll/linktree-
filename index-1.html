@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edduall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --black: #080808; --off-black: #111; --surface: #161616;
+  --border: #242424; --white: #f0ebe4; --dim: #5a5a5a;
+}
+body {
+  background: var(--black); color: var(--white);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; padding: 56px 20px 120px;
+  position: relative; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, #1c1c1c 0%, #080808 65%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none; z-index: 0;
+}
+.page {
+  position: relative; z-index: 1; width: 100%; max-width: 440px;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+/* PROFILE */
+.profile-section {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 36px; animation: fadeUp 0.7s ease both;
+}
+.cover-wrap {
+  width: 108px; height: 108px; border-radius: 50%; overflow: hidden;
+  border: 1px solid var(--border); background: var(--surface); margin-bottom: 22px;
+}
+#cover-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+#cover-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.profile-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 12vw, 68px); letter-spacing: 10px;
+  color: var(--white); line-height: 1; margin-bottom: 10px; text-align: center;
+}
+.profile-bio {
+  font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300;
+  font-size: 15px; color: var(--dim); text-align: center; max-width: 300px; line-height: 1.7;
+}
+.divider {
+  width: 1px; height: 28px;
+  background: linear-gradient(to bottom, transparent, var(--border), transparent);
+  margin-bottom: 28px;
+}
+
+/* LINKS */
+#links-container {
+  width: 100%; display: flex; flex-direction: column; gap: 8px;
+  animation: fadeUp 0.85s ease both;
+}
+
+.link-card {
+  display: flex; align-items: center; gap: 0;
+  background: rgba(255,255,255,0.035);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.06);
+  text-decoration: none; color: var(--white); overflow: hidden;
+  transition: background 0.22s, border-color 0.22s, transform 0.18s, box-shadow 0.22s;
+  cursor: pointer; position: relative;
+}
+.link-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  pointer-events: none;
+}
+.link-card:hover {
+  background: rgba(255,255,255,0.065);
+  border-color: rgba(255,255,255,0.1);
+  transform: translateX(4px);
+  box-shadow: -4px 0 0 0 rgba(255,255,255,0.08);
+}
+.link-card:active { transform: translateX(2px) scale(0.99); }
+
+/* thumbnail on left */
+.link-thumb {
+  width: 54px; height: 54px; flex-shrink: 0;
+  object-fit: cover; display: block;
+  border-right: 1px solid var(--border);
+  filter: grayscale(20%);
+}
+.link-thumb-placeholder {
+  width: 54px; height: 54px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid var(--border);
+}
+
+.link-inner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; flex: 1; min-width: 0;
+}
+.link-icon { opacity: 0.5; display: flex; align-items: center; flex-shrink: 0; }
+.link-label {
+  flex: 1; font-size: 11px; letter-spacing: 2.5px;
+  text-transform: uppercase; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.link-arrow { opacity: 0.2; font-size: 13px; margin-left: auto; flex-shrink: 0; }
+
+.link-admin-controls {
+  display: flex; gap: 0; flex-shrink: 0;
+  border-left: 1px solid var(--border);
+}
+.ctrl-btn {
+  background: transparent; border: none; border-left: 1px solid #1e1e1e;
+  color: var(--dim); width: 36px; height: 100%; min-height: 54px;
+  cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.ctrl-btn:first-child { border-left: none; }
+.ctrl-btn:hover { color: var(--white); background: #1e1e1e; }
+.ctrl-del:hover { color: #c44; background: #1a0a0a; }
+
+.empty-state {
+  color: #2e2e2e; text-align: center;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 24px 0;
+}
+
+/* MUSIC SECTION */
+.music-section { width: 100%; margin-top: 32px; animation: fadeUp 1s ease both; }
+.music-toggle {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  width: 100%; padding: 13px 20px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.06); color: var(--dim);
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 2.5px; text-transform: uppercase; transition: all 0.22s;
+}
+.music-toggle:hover { color: var(--white); background: rgba(255,255,255,0.055); border-color: rgba(255,255,255,0.1); }
+.music-toggle svg { opacity: 0.4; }
+.music-toggle-chevron { margin-left: auto; transition: transform 0.25s; }
+.music-toggle-chevron.open { transform: rotate(180deg); }
+.music-panel { display: none; border: 1px solid rgba(255,255,255,0.06); border-top: none; background: rgba(16,16,16,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); flex-direction: column; }
+.music-panel.open { display: flex; }
+.chat-messages {
+  padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  max-height: 320px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: #222 transparent;
+}
+.chat-empty { color: #2e2e2e; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; text-align: center; padding: 20px 0; }
+.msg { display: flex; flex-direction: column; gap: 5px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); animation: fadeUp 0.3s ease both; transition: background 0.2s; }
+.msg-meta { display: flex; align-items: baseline; gap: 8px; }
+.msg-name { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--white); opacity: 0.75; }
+.msg-time { font-size: 8px; letter-spacing: 1px; color: var(--dim); }
+.msg-text { font-family: 'Cormorant Garamond', serif; font-size: 14px; font-style: italic; font-weight: 300; color: var(--white); line-height: 1.5; }
+.msg-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+.like-btn {
+  display: flex; align-items: center; gap: 5px; background: transparent; border: none;
+  color: var(--dim); font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: 1px; cursor: pointer; padding: 0; transition: color 0.15s; user-select: none;
+}
+.like-btn:hover { color: var(--white); }
+.like-btn.liked { color: var(--white); }
+.like-btn svg { transition: transform 0.15s; }
+.like-btn:hover svg { transform: scale(1.2); }
+.like-btn:active svg { transform: scale(0.85); }
+.like-btn.liked svg { transform: scale(1.0); animation: pop 0.25s ease; }
+@keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.4)} 100%{transform:scale(1)} }
+.like-count { min-width: 12px; }
+.msg-del { background: transparent; border: none; color: #2a2a2a; font-size: 10px; cursor: pointer; padding: 0; transition: color 0.15s; }
+.msg-del:hover { color: #c44; }
+.chat-input-area {
+  padding: 12px 16px 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.chat-input-row { display: flex; gap: 8px; }
+input.chat-name {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: #f0ebe4 !important;
+  -webkit-text-fill-color: #f0ebe4 !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 11px; padding: 10px 12px;
+  outline: none; letter-spacing: 1px; transition: border-color 0.2s;
+  width: 100%; flex-shrink: 0; box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -webkit-appearance: none !important; appearance: none !important;
+  border-radius: 0 !important;
+}
+input.chat-text {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: #f0ebe4 !important;
+  -webkit-text-fill-color: #f0ebe4 !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 12px; padding: 10px 12px;
+  outline: none; flex: 1; transition: border-color 0.2s;
+  box-shadow: none !important; -webkit-box-shadow: none !important;
+  -webkit-appearance: none !important; appearance: none !important;
+  border-radius: 0 !important;
+}
+input.chat-name:focus { border-color: rgba(255,255,255,0.18) !important; }
+input.chat-text:focus { border-color: rgba(255,255,255,0.18) !important; }
+input.chat-name::placeholder { color: #444; -webkit-text-fill-color: #444; }
+input.chat-text::placeholder { color: #444; -webkit-text-fill-color: #444; }
+::placeholder { color: #383838; -webkit-text-fill-color: #383838; }
+.chat-send {
+  background: var(--white); color: var(--black); border: none;
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  padding: 10px 16px; cursor: pointer;
+  transition: opacity 0.15s, transform 0.12s; flex-shrink: 0;
+}
+.chat-send:hover { opacity: 0.88; transform: scale(1.04); }
+.chat-send:active { transform: scale(0.93); }
+.chat-send:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+/* ADMIN TRIGGER */
+.admin-trigger {
+  position: fixed; bottom: 22px; right: 22px; z-index: 100;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--dim); width: 40px; height: 40px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.admin-trigger:hover { border-color: #444; color: var(--white); }
+#admin-badge { position: fixed; top: 14px; right: 14px; z-index: 100; gap: 8px; align-items: center; display: none; }
+.badge-tag { background: var(--white); color: var(--black); font-size: 8px; letter-spacing: 3px; padding: 5px 10px; text-transform: uppercase; }
+.badge-logout {
+  background: transparent; border: 1px solid #2a2a2a; color: var(--dim);
+  font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 2px;
+  padding: 5px 10px; cursor: pointer; text-transform: uppercase; transition: all 0.2s;
+}
+.badge-logout:hover { color: var(--white); border-color: var(--white); }
+
+/* OVERLAY */
+#admin-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+  z-index: 200; align-items: flex-end; justify-content: center; backdrop-filter: blur(6px);
+}
+.admin-sheet {
+  background: var(--off-black); border: 1px solid var(--border); border-bottom: none;
+  width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto;
+  padding: 28px 24px 40px; display: flex; flex-direction: column; gap: 24px;
+  animation: slideUp 0.28s ease; scrollbar-width: thin; scrollbar-color: #222 transparent;
+}
+.sheet-header {
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 6px;
+  color: var(--white); border-bottom: 1px solid var(--border); padding-bottom: 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.close-btn { background: transparent; border: none; color: var(--dim); font-size: 16px; cursor: pointer; transition: color 0.15s; padding: 0 4px; }
+.close-btn:hover { color: var(--white); }
+.section-label { font-size: 8px; letter-spacing: 3px; color: var(--dim); text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; }
+.field-group { display: flex; flex-direction: column; gap: 9px; }
+
+input[type="text"], input[type="url"], input[type="password"], input[type="number"], textarea, select {
+  background: #0c0c0c; border: 1px solid var(--border); color: var(--white);
+  font-family: 'DM Mono', monospace; font-size: 11px; padding: 11px 13px;
+  width: 100%; outline: none; letter-spacing: 1px; transition: border-color 0.2s;
+  -webkit-appearance: none; appearance: none;
+}
+input:focus, textarea:focus, select:focus { border-color: #444; }
+select option { background: #111; }
+textarea { resize: vertical; min-height: 58px; }
+.field-row { display: grid; grid-template-columns: 1fr 90px; gap: 9px; }
+.btn { background: var(--white); color: var(--black); border: none; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 3px; padding: 13px 18px; cursor: pointer; text-transform: uppercase; transition: opacity 0.15s; width: 100%; }
+.btn:hover { opacity: 0.82; }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn-ghost { background: transparent; color: var(--dim); border: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 3px; padding: 12px 18px; cursor: pointer; text-transform: uppercase; transition: all 0.15s; }
+.btn-ghost:hover { color: var(--white); border-color: var(--white); }
+.btn-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+
+.upload-zone {
+  border: 1px dashed var(--border); padding: 16px; text-align: center;
+  cursor: pointer; transition: border-color 0.2s; position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.upload-zone:hover { border-color: #444; }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-zone-label { font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; pointer-events: none; }
+.upload-thumb-round { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: none; border: 1px solid var(--border); pointer-events: none; }
+.upload-thumb-rect  { width: 60px; height: 40px; border-radius: 2px; object-fit: cover; display: none; border: 1px solid var(--border); pointer-events: none; }
+
+#pw-error { display: none; color: #c44; font-size: 9px; letter-spacing: 1.5px; }
+.footer { margin-top: 48px; font-size: 8px; letter-spacing: 3px; color: #1e1e1e; text-transform: uppercase; }
+
+/* COPY BOX */
+#copy-box {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.07);
+  color: var(--white);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; letter-spacing: 1.5px;
+  padding: 0; cursor: pointer;
+  display: flex; align-items: stretch; gap: 0;
+  transition: background 0.25s, border-color 0.25s, transform 0.15s;
+  text-align: left; position: relative; overflow: hidden;
+}
+#copy-box::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+#copy-box:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+  transform: translateX(2px);
+}
+#copy-box:active { transform: scale(0.985); }
+#copy-icon { opacity: 0.3; flex-shrink: 0; transition: opacity 0.2s, transform 0.2s; display: flex; }
+#copy-box:hover #copy-icon { opacity: 0.7; transform: scale(1.1); }
+#copy-box-inner {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1; padding: 14px 16px; min-width: 0;
+}
+#copy-text-display { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#copy-box-icon-wrap {
+  width: 48px; min-height: 48px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.45);
+}
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideUp { from { transform:translateY(36px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+</style>
+</head>
+<body>
+
+<div id="admin-badge">
+  <span class="badge-tag">ADMIN</span>
+  <button class="badge-logout" onclick="logout()">SAIR</button>
+</div>
+
+<div class="page">
+  <div class="profile-section">
+    <div class="cover-wrap">
+      <img id="cover-img" src="" alt="">
+      <div id="cover-placeholder">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1.5">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+    </div>
+    <div class="profile-name" id="profile-name">EDDUALL</div>
+    <div class="profile-bio" id="profile-bio"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Copyable text -->
+  <p id="copy-box-label" style="display:none;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:#444;letter-spacing:0.5px;text-align:center;margin-bottom:5px;width:100%;">doa aí pra eu comprar pão kk</p>
+  <div id="copy-box-wrap" style="display:none;width:100%;margin-bottom:8px;">
+    <button id="copy-box" onclick="copyText()" title="clique para copiar">
+      <span id="copy-box-icon-wrap"><svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.32 7.68a3.6 3.6 0 0 0-2.56 1.06l-4.1 4.1a2.4 2.4 0 0 1-3.32 0l-4.1-4.1a3.6 3.6 0 0 0-2.56-1.06H6.5l7.56-7.56a2.74 2.74 0 0 1 3.88 0L25.5 7.68h-1.18zm0 16.64a3.6 3.6 0 0 1-2.56-1.06l-4.1-4.1a2.4 2.4 0 0 0-3.32 0l-4.1 4.1a3.6 3.6 0 0 1-2.56 1.06H6.5l7.56 7.56a2.74 2.74 0 0 0 3.88 0l7.56-7.56h-1.18zM7.68 7.68a3.6 3.6 0 0 1 1.06 2.56v.4a2.4 2.4 0 0 0 .7 1.7l4.1 4.1a.8.8 0 0 1 0 1.12l-4.1 4.1a2.4 2.4 0 0 0-.7 1.7v.4a3.6 3.6 0 0 1-1.06 2.56L.12 18.88a2.74 2.74 0 0 1 0-3.88L7.68 7.68zm16.64 0 7.56 7.32a2.74 2.74 0 0 1 0 3.88l-7.56 7.32a3.6 3.6 0 0 1-1.06-2.56v-.4a2.4 2.4 0 0 0-.7-1.7l-4.1-4.1a.8.8 0 0 1 0-1.12l4.1-4.1a2.4 2.4 0 0 0 .7-1.7v-.4a3.6 3.6 0 0 1 1.06-2.56z" fill="currentColor"/></svg></span>
+      <span id="copy-box-inner">
+        <span id="copy-text-display"></span>
+        <span id="copy-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+      </span>
+    </button>
+  </div>
+
+  <div id="links-container"><div class="empty-state">carregando...</div></div>
+
+  <!-- Music -->
+  <div class="music-section">
+    <button class="music-toggle" onclick="toggleMusic()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      pedidos de música
+      <svg class="music-toggle-chevron" id="music-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="music-panel" id="music-panel">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-empty">— nenhum pedido ainda —</div>
+      </div>
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <input type="text" class="chat-name" id="chat-name" placeholder="seu nome" maxlength="20">
+        </div>
+        <div class="chat-input-row">
+          <input type="text" class="chat-text" id="chat-text" placeholder="qual música?" maxlength="120" onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="chat-send" id="chat-send-btn" onclick="sendMsg()">↑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">© edduall</div>
+</div>
+
+<button class="admin-trigger" onclick="toggleAdmin()">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <path d="M12 15c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+</button>
+
+<div id="admin-overlay" onclick="overlayClick(event)">
+  <div class="admin-sheet">
+
+    <div id="login-screen">
+      <div class="sheet-header">ADMIN <button class="close-btn" onclick="toggleAdmin()">✕</button></div>
+      <div class="field-group">
+        <div class="section-label">Senha de acesso</div>
+        <input type="password" id="admin-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+        <div id="pw-error">senha incorreta</div>
+        <button class="btn" onclick="login()">ENTRAR</button>
+      </div>
+    </div>
+
+    <div id="admin-panel" style="display:none;flex-direction:column;gap:24px;">
+      <div class="sheet-header">ADMIN <button class="close-btn" onclick="toggleAdmin()">✕</button></div>
+
+      <!-- PERFIL -->
+      <div>
+        <div class="section-label">Perfil</div>
+        <div class="field-group">
+          <input type="text" id="admin-name" placeholder="Nome exibido">
+          <textarea id="admin-bio" placeholder="Bio / frase (opcional)" rows="2"></textarea>
+          <div class="upload-zone" onclick="document.getElementById('cover-upload').click()">
+            <input type="file" id="cover-upload" accept="image/*" onchange="pickImage(this,'cover-thumb-r','cover-img',400,'cover-placeholder',null,'upload-label-profile')" style="pointer-events:none;position:absolute;opacity:0;width:0;height:0;">
+            <img id="cover-thumb-r" class="upload-thumb-round" src="" alt="">
+            <span class="upload-zone-label" id="upload-label-profile">foto de perfil — clique para escolher</span>
+          </div>
+          <button class="btn" id="save-profile-btn" onclick="saveProfile()">SALVAR PERFIL</button>
+        </div>
+      </div>
+
+      <!-- COPY TEXT -->
+      <div>
+        <div class="section-label">Texto copiável</div>
+        <div class="field-group">
+          <input type="text" id="admin-copy-text" placeholder="ex: pix@email.com, discord.gg/xxx..." maxlength="200">
+          <button class="btn" id="save-copy-btn" onclick="saveCopyText()">SALVAR</button>
+        </div>
+      </div>
+
+      <!-- LINKS -->
+      <div>
+        <div class="section-label" id="form-title">ADICIONAR LINK</div>
+        <div class="field-group">
+          <input type="text" id="link-label" placeholder="Nome  ex: TikTok, Portfólio...">
+          <input type="url"  id="link-url"   placeholder="URL  ex: https://tiktok.com/@edufrll">
+          <div class="field-row">
+            <select id="link-icon">
+              <option value="none">Sem ícone</option>
+              <option value="tiktok">TikTok</option>
+              <option value="youtube">YouTube</option>
+              <option value="instagram">Instagram</option>
+              <option value="twitter">X / Twitter</option>
+              <option value="discord">Discord</option>
+              <option value="twitch">Twitch</option>
+              <option value="email">E-mail</option>
+              <option value="website">Website</option>
+              <option value="link">Link</option>
+            </select>
+            <input type="number" id="link-order" placeholder="Ordem" min="0" value="0">
+          </div>
+
+          <!-- imagem do link -->
+          <div class="upload-zone" onclick="document.getElementById('link-img-upload').click()">
+            <input type="file" id="link-img-upload" accept="image/*" onchange="pickImage(this,'link-thumb-preview',null,300,null,'pendingLinkImg','upload-label-link')" style="pointer-events:none;position:absolute;opacity:0;width:0;height:0;">
+            <img id="link-thumb-preview" class="upload-thumb-rect" src="" alt="">
+            <span class="upload-zone-label" id="upload-label-link">imagem do link (opcional)</span>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn" id="save-link-btn" onclick="saveLink()">ADICIONAR</button>
+            <button class="btn-ghost" id="cancel-edit-btn" onclick="cancelEdit()" style="display:none">CANCELAR</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyDJpqyCiPZzx-Ptoj-cYAw-FMQ-31aHtl4",
+  authDomain:"edu-sem-all.firebaseapp.com",
+  projectId:"edu-sem-all",
+  storageBucket:"edu-sem-all.firebasestorage.app",
+  messagingSenderId:"643275978214",
+  appId:"1:643275978214:web:e0e85e2bdad2a0d794d227"
+});
+var db = firebase.firestore();
+
+var ICONS = {
+  tiktok:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-6.13 6.3 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/></svg>',
+  youtube:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
+  instagram: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>',
+  twitter:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+  discord:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.134 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>',
+  twitch:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>',
+  email:     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+  website:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+  link:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+};
+
+var links = [], profileData = {name:'Edduall', bio:'', coverUrl:''};
+var isAdmin = false, editingId = null, musicOpen = false;
+var likedMsgs = {};
+try { likedMsgs = JSON.parse(localStorage.getItem('liked')||'{}'); } catch(e){}
+var pendingCoverBase64 = null;
+var pendingLinkImg = null;
+var pendingCopyImg = null;
+
+// ── IMAGE PICKER (shared util) ─────────────────────────────────────
+function pickImage(input, thumbId, mainImgId, maxPx, placeholderId, pendingVar, labelId) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var w = img.width, h = img.height;
+      if (w > h) { if (w > maxPx) { h = h*maxPx/w; w = maxPx; } }
+      else        { if (h > maxPx) { w = w*maxPx/h; h = maxPx; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      var b64 = canvas.toDataURL('image/jpeg', 0.82);
+      // Store in the right pending var
+      if (pendingVar === 'pendingLinkImg') pendingLinkImg = b64;
+      else if (pendingVar === 'pendingCopyImg') pendingCopyImg = b64;
+      else pendingCoverBase64 = b64;
+      // Update thumbs
+      if (thumbId) {
+        var t = document.getElementById(thumbId);
+        t.src = b64; t.style.display = 'block';
+      }
+      if (mainImgId) {
+        var m = document.getElementById(mainImgId);
+        m.src = b64; m.style.display = 'block';
+      }
+      if (placeholderId) document.getElementById(placeholderId).style.display = 'none';
+      if (labelId) document.getElementById(labelId).textContent = file.name;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── PROFILE ────────────────────────────────────────────────────────
+function loadProfile() {
+  db.collection('profile').get().then(function(snap) {
+    snap.forEach(function(d){ profileData = Object.assign({},profileData,d.data(),{_id:d.id}); });
+    renderProfile();
+  }).catch(function(){ renderProfile(); });
+}
+function renderProfile() {
+  document.getElementById('profile-name').textContent = profileData.name||'Edduall';
+  document.getElementById('profile-bio').textContent  = profileData.bio||'';
+  if (profileData.coverUrl) {
+    document.getElementById('cover-img').src = profileData.coverUrl;
+    document.getElementById('cover-img').style.display = 'block';
+    document.getElementById('cover-placeholder').style.display = 'none';
+  }
+  if (isAdmin) {
+    document.getElementById('admin-name').value = profileData.name||'';
+    document.getElementById('admin-bio').value  = profileData.bio||'';
+  }
+}
+function saveProfile() {
+  var name = document.getElementById('admin-name').value.trim();
+  var bio  = document.getElementById('admin-bio').value.trim();
+  var btn  = document.getElementById('save-profile-btn');
+  btn.textContent='...'; btn.disabled=true;
+  var coverUrl = pendingCoverBase64 || profileData.coverUrl || '';
+  profileData = Object.assign({},profileData,{name:name,bio:bio,coverUrl:coverUrl});
+  db.collection('profile').get().then(function(snap){
+    var ops=[];
+    if(snap.empty) ops.push(db.collection('profile').add({name:name,bio:bio,coverUrl:coverUrl}));
+    else snap.forEach(function(d){ ops.push(db.collection('profile').doc(d.id).update({name:name,bio:bio,coverUrl:coverUrl})); });
+    return Promise.all(ops);
+  }).then(function(){
+    renderProfile(); pendingCoverBase64=null;
+    btn.textContent='SALVAR PERFIL'; btn.disabled=false;
+  }).catch(function(e){ alert('Erro: '+e.message); btn.textContent='SALVAR PERFIL'; btn.disabled=false; });
+}
+
+// ── LINKS ──────────────────────────────────────────────────────────
+function loadLinks() {
+  db.collection('links').orderBy('order','asc').get()
+    .then(processLinks)
+    .catch(function(){ db.collection('links').get().then(processLinks).catch(function(){ renderLinks(); }); });
+}
+function processLinks(snap) {
+  links=[];
+  snap.forEach(function(d){ links.push(Object.assign({id:d.id},d.data())); });
+  renderLinks();
+}
+
+function renderLinks() {
+  var c = document.getElementById('links-container');
+  c.innerHTML='';
+  if(!links.length){ c.innerHTML='<div class="empty-state">— sem links —</div>'; return; }
+  links.forEach(function(link) {
+    // Wrapper: always a real <a> that opens the URL
+    var a = document.createElement('a');
+    a.className = 'link-card';
+    if (link.url) {
+      a.href = link.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+    } else {
+      a.href = '#';
+    }
+
+    // thumbnail (left side)
+    var thumbHtml = '';
+    if (link.imgUrl) {
+      thumbHtml = '<img class="link-thumb" src="' + link.imgUrl + '" alt="">';
+    } else {
+      thumbHtml = '<div class="link-thumb-placeholder">'
+        + (ICONS[link.icon]||'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>')
+        + '</div>';
+    }
+
+    // admin controls — stop propagation so clicks here don't navigate
+    var adminHtml = '';
+    if (isAdmin) {
+      adminHtml = '<div class="link-admin-controls" onclick="event.preventDefault();event.stopPropagation()">'
+        + '<button class="ctrl-btn" onclick="editLink(\'' + link.id + '\')">✎</button>'
+        + '<button class="ctrl-btn ctrl-del" onclick="deleteLink(\'' + link.id + '\')">✕</button>'
+        + '</div>';
+    }
+
+    var icon = ICONS[link.icon] ? '<span class="link-icon">'+ICONS[link.icon]+'</span>' : '';
+
+    a.innerHTML = thumbHtml
+      + '<div class="link-inner">' + icon + '<span class="link-label">'+(link.label||'Link')+'</span><span class="link-arrow">→</span></div>'
+      + adminHtml;
+
+    c.appendChild(a);
+  });
+}
+
+function editLink(id) {
+  var link = links.find(function(l){ return l.id===id; });
+  if (!link) return;
+  editingId = id;
+  document.getElementById('link-label').value = link.label||'';
+  document.getElementById('link-url').value   = link.url||'';
+  document.getElementById('link-icon').value  = link.icon||'none';
+  document.getElementById('link-order').value = link.order!=null?link.order:links.indexOf(link);
+  // show existing img thumb if any
+  if (link.imgUrl) {
+    var t = document.getElementById('link-thumb-preview');
+    t.src=link.imgUrl; t.style.display='block';
+    document.getElementById('upload-label-link').textContent='imagem atual';
+  }
+  pendingLinkImg = null;
+  document.getElementById('form-title').textContent    = 'EDITAR LINK';
+  document.getElementById('save-link-btn').textContent = 'SALVAR';
+  document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+  document.querySelector('.admin-sheet').scrollTop = 9999;
+}
+function deleteLink(id) {
+  if(!confirm('Deletar este link?')) return;
+  db.collection('links').doc(id).delete().then(loadLinks);
+}
+function cancelEdit() {
+  editingId=null; pendingLinkImg=null;
+  document.getElementById('link-label').value = '';
+  document.getElementById('link-url').value   = '';
+  document.getElementById('link-icon').value  = 'none';
+  document.getElementById('link-order').value = links.length;
+  var t = document.getElementById('link-thumb-preview');
+  t.src=''; t.style.display='none';
+  document.getElementById('upload-label-link').textContent='imagem do link (opcional)';
+  document.getElementById('form-title').textContent    = 'ADICIONAR LINK';
+  document.getElementById('save-link-btn').textContent = 'ADICIONAR';
+  document.getElementById('cancel-edit-btn').style.display='none';
+}
+function saveLink() {
+  var label = document.getElementById('link-label').value.trim();
+  var url   = document.getElementById('link-url').value.trim();
+  var icon  = document.getElementById('link-icon').value;
+  var order = parseInt(document.getElementById('link-order').value)||0;
+  if (!label){ alert('Coloca um nome pro link.'); return; }
+  var btn = document.getElementById('save-link-btn');
+  btn.textContent='...'; btn.disabled=true;
+
+  // figure out imgUrl
+  var imgUrl = pendingLinkImg || '';
+  if (editingId && !pendingLinkImg) {
+    var existing = links.find(function(l){ return l.id===editingId; });
+    if (existing) imgUrl = existing.imgUrl || '';
+  }
+
+  var data = {label:label, url:url, icon:icon, order:order, imgUrl:imgUrl};
+  var p = editingId
+    ? db.collection('links').doc(editingId).set(data, {merge: true})
+    : db.collection('links').add(data);
+  p.then(function(){
+    loadLinks(); cancelEdit();
+    btn.textContent='ADICIONAR'; btn.disabled=false;
+  }).catch(function(e){ alert('Erro: '+e.message); btn.textContent='ADICIONAR'; btn.disabled=false; });
+}
+
+// ── MUSIC CHAT ─────────────────────────────────────────────────────
+function toggleMusic() {
+  musicOpen=!musicOpen;
+  document.getElementById('music-panel').classList.toggle('open',musicOpen);
+  document.getElementById('music-chevron').classList.toggle('open',musicOpen);
+  if(musicOpen) loadMsgs();
+}
+function loadMsgs() {
+  db.collection('musicreqs').orderBy('likes','desc').orderBy('ts','desc').get()
+    .then(renderMsgs).catch(function(){
+      db.collection('musicreqs').orderBy('ts','desc').get().then(renderMsgs).catch(function(){});
+    });
+}
+function renderMsgs(snap) {
+  var c=document.getElementById('chat-messages'); c.innerHTML='';
+  var docs=[];
+  snap.forEach(function(d){ docs.push(Object.assign({id:d.id},d.data())); });
+  docs.sort(function(a,b){ return (b.likes||0)-(a.likes||0)||(b.ts||0)-(a.ts||0); });
+  if(!docs.length){ c.innerHTML='<div class="chat-empty">— nenhum pedido ainda —</div>'; return; }
+  docs.forEach(function(msg){
+    var liked=likedMsgs[msg.id];
+    var t=msg.ts?new Date(msg.ts):null;
+    var timeStr=t?t.getHours()+':'+String(t.getMinutes()).padStart(2,'0'):'';
+    var del=isAdmin?'<button class="msg-del" onclick="deleteMsg(\''+msg.id+'\')" title="deletar">✕</button>':'';
+    var el=document.createElement('div');
+    el.className='msg';
+    el.innerHTML='<div class="msg-meta"><span class="msg-name">'+esc(msg.name||'anon')+'</span>'+(timeStr?'<span class="msg-time">'+timeStr+'</span>':'')+'</div>'
+      +'<div class="msg-text">'+esc(msg.text||'')+'</div>'
+      +'<div class="msg-footer">'
+      +'<button class="like-btn'+(liked?' liked':'')+'" onclick="toggleLike(\''+msg.id+'\')">'
+      +'<svg width="11" height="11" viewBox="0 0 24 24" fill="'+(liked?'currentColor':'none')+'" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+      +'<span class="like-count">'+(msg.likes||0)+'</span></button>'
+      +del+'</div>';
+    c.appendChild(el);
+  });
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toggleLike(id) {
+  if(likedMsgs[id]) return;
+  likedMsgs[id]=true;
+  try{ localStorage.setItem('liked',JSON.stringify(likedMsgs)); }catch(e){}
+  db.collection('musicreqs').doc(id).update({likes:firebase.firestore.FieldValue.increment(1)}).then(loadMsgs).catch(function(){});
+}
+function deleteMsg(id) {
+  if(!confirm('Deletar pedido?')) return;
+  db.collection('musicreqs').doc(id).delete().then(loadMsgs);
+}
+function sendMsg() {
+  var name=document.getElementById('chat-name').value.trim()||'anon';
+  var text=document.getElementById('chat-text').value.trim();
+  if(!text) return;
+  var btn=document.getElementById('chat-send-btn'); btn.disabled=true;
+  db.collection('musicreqs').add({name:name,text:text,likes:0,ts:Date.now()}).then(function(){
+    document.getElementById('chat-text').value='';
+    btn.disabled=false; loadMsgs();
+  }).catch(function(e){ alert('Erro: '+e.message); btn.disabled=false; });
+}
+
+// ── AUTH ───────────────────────────────────────────────────────────
+function login() {
+  if(document.getElementById('admin-pw').value==='040824ke@'){
+    isAdmin=true;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('admin-panel').style.display='flex';
+    document.getElementById('admin-badge').style.display='flex';
+    document.getElementById('pw-error').style.display='none';
+    renderProfile(); renderLinks();
+    if(musicOpen) loadMsgs();
+  } else {
+    document.getElementById('pw-error').style.display='block';
+  }
+}
+function logout() {
+  isAdmin=false;
+  document.getElementById('admin-badge').style.display='none';
+  document.getElementById('admin-overlay').style.display='none';
+  renderLinks();
+}
+function toggleAdmin() {
+  var o=document.getElementById('admin-overlay');
+  if(o.style.display==='flex'){ o.style.display='none'; return; }
+  o.style.display='flex';
+  if(!isAdmin){
+    document.getElementById('login-screen').style.display='block';
+    document.getElementById('admin-panel').style.display='none';
+    document.getElementById('pw-error').style.display='none';
+    document.getElementById('admin-pw').value='';
+  }
+}
+function overlayClick(e){ if(e.target.id==='admin-overlay') toggleAdmin(); }
+
+// ── INIT ───────────────────────────────────────────────────────────
+// ── COPY TEXT ─────────────────────────────────────────────────────
+function loadCopyText() {
+  db.collection('copytext').limit(1).get().then(function(snap) {
+    if (snap.empty) return;
+    var d = snap.docs[0];
+    var txt = d.data().text || '';
+    if (!txt) return;
+    document.getElementById('copy-text-display').textContent = txt;
+    document.getElementById('copy-box-wrap').style.display = 'block';
+    document.getElementById('copy-box-label').style.display = 'block';
+    if (document.getElementById('admin-copy-text'))
+      document.getElementById('admin-copy-text').value = txt;
+
+  }).catch(function(){});
+}
+
+function saveCopyText() {
+  var txt = document.getElementById('admin-copy-text').value.trim();
+  var btn = document.getElementById('save-copy-btn');
+  btn.textContent = '...'; btn.disabled = true;
+  db.collection('copytext').limit(1).get().then(function(snap) {
+    var existingImg = '';
+    if (!snap.empty) existingImg = snap.docs[0].data().imgUrl || '';
+    var imgUrl = pendingCopyImg || existingImg;
+    var data = { text: txt, imgUrl: imgUrl };
+    if (snap.empty) return db.collection('copytext').add(data);
+    return db.collection('copytext').doc(snap.docs[0].id).set(data);
+  }).then(function() {
+    pendingCopyImg = null;
+    loadCopyText();
+    btn.textContent = 'SALVO ✓';
+    setTimeout(function(){ btn.textContent = 'SALVAR'; btn.disabled = false; }, 1500);
+  }).catch(function(e) {
+    alert('Erro: ' + e.message);
+    btn.textContent = 'SALVAR'; btn.disabled = false;
+  });
+}
+
+function copyText() {
+  var txt = document.getElementById('copy-text-display').textContent;
+  if (!txt) return;
+  navigator.clipboard.writeText(txt).then(function() {
+    var icon = document.getElementById('copy-icon');
+    var prev = icon.innerHTML;
+    icon.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+    icon.style.opacity = '0.8';
+    setTimeout(function(){ icon.innerHTML = prev; icon.style.opacity = ''; }, 1600);
+  }).catch(function(){});
+}
+
+loadProfile(); loadLinks(); loadCopyText();
+</script>
+</body>
+</html>
